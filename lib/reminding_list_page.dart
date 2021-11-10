@@ -42,23 +42,47 @@ class _RemindingListPageState extends State<RemindingListPage> {
           key: UniqueKey(),
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-              Checkbox(
-              value: newRemLiItem.isChecked,
-                onChanged: (value) {
-                  setState(() {
-
-                    print(newRemLiItem.isChecked);
-                  });
-                },
-              ),
             GestureDetector(
                 child: Container(
-                  color: _iconButtonPressed ? Colors.green: Colors.red,
                     margin: EdgeInsets.fromLTRB(15, 10, 15, 0),
                     height:75.0,
                     width: 250,
-                    child: Center(
-                        child: Text(newRemLiItem.itemName)
+                    child: Card(
+                        shape: RoundedRectangleBorder(
+
+                          borderRadius: BorderRadius.circular(15.0),
+
+                        ),
+
+                        color: _iconButtonPressed ? Colors.green: Colors.red,
+                        elevation: 10,
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: newRemLiItem.isChecked,
+                              onChanged: (value) {
+                                setState(() {
+
+                                  print(newRemLiItem.isChecked);
+                                });
+                              },
+                            ),
+                            const SizedBox(
+                              width:40
+                            ),
+                            Container(
+                                child: Center(
+                                    child:Text(
+                                        newRemLiItem.itemName,
+                                        style: const TextStyle(
+                                            fontSize: 35.0,
+                                            color: Colors.white
+                                        )
+                                    )
+                                )
+                              )
+                            ],
+                          )
                     ),
                 ),
                 onTap: (){
@@ -82,7 +106,7 @@ class _RemindingListPageState extends State<RemindingListPage> {
       }
 
   void removeItem(int id) {
-    remindingItems.removeAt(id);
+    remindingItems.clear();
   }
 
 
