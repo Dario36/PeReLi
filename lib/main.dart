@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'main_page.dart';
+import 'package:sqflite/sqflite.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MaterialApp(
     title:"App",
     home: MainPage(),

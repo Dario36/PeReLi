@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:pereli/reminding_list.dart';
 import 'reminding_list_page.dart';
 import 'version_credits.dart';
-import 'reminding_list.dart';
-
+// import 'reminding_list.dart';
+// import 'package:pereli/reminding_list.dart';
+import 'database.dart';
 
 
 class MainPage extends StatefulWidget {
@@ -14,58 +16,21 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   bool isChecked = false;
-  List<Widget> remindingLists = [];
-
-  void addingList(String s) {
-    //Eigenes RemindingList Objekt
-    RemindingList newRemLi = RemindingList(s);
-
-    remindingLists.add(
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            GestureDetector(
-                child: Container(
-                    color: Colors.blueGrey[200],
-                    margin: EdgeInsets.fromLTRB(15, 10, 15, 0),
-                    height:75.0,
-                    width: 300,
-                    child: Center(
-                        child: Text(s)
-                    )
-                ),
-                onTap: () {
-                  //Reminding List des Objects setzen
-                  //Danach Reminding List aufrufen
-                  //Sie wird dann mit entsprechender Liste gebaut
-                  setRemindingItems(newRemLi.listItems);
-                  setTitle(newRemLi.listName);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) {
-                          return RemindingListPage();
-                        }
-                    ),
-                  );
-                }
-            )
-          ],
-        )
-    );
-  }
-
+  int? selectedId;
+  String helpstring = "";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title:const Text('PeReLi'),
+          title: const Text("PeReLi"),
           backgroundColor: Colors.blueGrey[800],
           leading: Builder(
             builder: (BuildContext context) {
-              return IconButton(icon: const Icon(Icons.menu),
-                onPressed: () { Scaffold.of(context).openDrawer();
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
                 },
                 tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
               );
@@ -77,7 +42,6 @@ class _MainPageState extends State<MainPage> {
               tooltip: 'Show Snackbar',
               onPressed: () {
                 setState(() {
-                  remindingLists.clear();
 
                 });
               },
@@ -92,12 +56,10 @@ class _MainPageState extends State<MainPage> {
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-
               decoration: BoxDecoration(
                 color: Colors.blueGrey,
               ),
               child: Icon(Icons.assessment),
-
             ),
             ListTile(
               leading: const Icon(Icons.settings),
@@ -117,14 +79,11 @@ class _MainPageState extends State<MainPage> {
                   // Then close the drawer
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) {
-                          return VersionCredits();
-                        }
-                    ),
+                    MaterialPageRoute(builder: (context) {
+                      return VersionCredits();
+                    }),
                   );
-                }
-            ),
+                }),
             ListTile(
               leading: Checkbox(
                 value: isChecked,
@@ -139,43 +98,128 @@ class _MainPageState extends State<MainPage> {
           ],
         ),
       ),
-      body: ListView( //Users can scroll through the listview if there isnt enough space
-        children: <Widget>[
-          Column(
-            children: remindingLists,
-          ),
-        ],
+      body: Center(
+        child: FutureBuilder<List<RemindingList>>(
+            future: DatabaseHelper.instance.getRemindinglists(),
+            builder: (BuildContext context,
+                AsyncSnapshot<List<RemindingList>> snapshot) {
+              if (!snapshot.hasData) {
+                return Center(child: Text('Loading...'));
+              }
+              return snapshot.data!.isEmpty
+                  ? Center(child: Text('No Remindinglists present'))
+                  : ListView(
+                children: snapshot.data!.map((remindinglist) {
+                  return Center(
+                    child: Card(
+                      child: ListTile(
+                        title: Text(remindinglist.name),
+                        onTap: () {
+                          setTitle(remindinglist.name);
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                              builder: (context) {
+                            return RemindingListPage();
+                          }
+                          ),
+                          );
+                        },
+                        onLongPress: () {
+                          setState(() {
+                            //TODO ALERT WIRKLICH LÖSCHEN?
+                            DatabaseHelper.instance.remove(remindinglist.id!, remindinglist.name);
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
       ),
-
       // Liste hinzufügen
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blueGrey[800],
-        onPressed: () {
-            //popup Window to insert the name of the item
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Namen eingeben'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        TextField(
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (value) {
-                            addingList(value);
-                            Navigator.of(context).pop();
-                            setState(() => {});
-                          },
-                        )
-                      ],
-                    ),
-                  );
-          });
+        onPressed: () async {
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Namen eingeben'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TextField(
+                        textInputAction: TextInputAction.none,
+                        onSubmitted: (value) {
+                          helpstring = value;
+                          print(helpstring);
+                        },
+                      ),
+                      TextButton(
+                        style: ButtonStyle(
+                          foregroundColor:
+                          MaterialStateProperty.all<Color>(Colors.blue),
+                        ),
+                        onPressed: () async {
+                          await DatabaseHelper.instance.add(
+                            RemindingList(name: helpstring),
+
+                          );
+                          helpstring ="";
+                          setState(() {
+
+                          });
+                        },
+                        child: Text('Add'),
+                      )
+                    ],
+                  ),
+                );
+              });
         },
         child: const Icon(Icons.add),
       ),
     );
   }
 }
+
+//----------------------------------------------------------------------------
+//   showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: const Text('Namen eingeben'),
+//           content: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: <Widget>[
+//               TextField(
+//                 textInputAction: TextInputAction.done,
+//                 onSubmitted: (value) {
+//                   helpstring = value;
+//                   print(helpstring);
+//                 },
+//               ),
+//               TextButton(
+//                 style: ButtonStyle(
+//                   foregroundColor:
+//                       MaterialStateProperty.all<Color>(Colors.blue),
+//                 ),
+//                 onPressed: () async {
+//                   await DatabaseHelper.instance.add(
+//                     RemindingList(listName: helpstring),
+//                   );
+//                   setState(() {
+//                     helpstring = "";
+//                   });
+//                 },
+//                 child: Text('Add'),
+//               )
+//             ],
+//           ),
+//         );
+//       });
+// },

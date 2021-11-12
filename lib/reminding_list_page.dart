@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'reminding_list_item.dart';
-
+import 'package:pereli/item.dart';
+import 'database.dart';
 
 List<Widget> remindingItems = [];
 String title = "PeReLi";
 Set<bool> helpSet = {};
+int id=0;
 
 
 class RemindingListPage extends StatefulWidget {
@@ -27,64 +28,9 @@ class _RemindingListPageState extends State<RemindingListPage> {
     List<Widget> checkList = [];
     bool remove = false;
     bool _iconButtonPressed = false;
-    int id=0;
-  //Method Called to add an Item to the List
-  void addingItem(String s, bool b) {
-    //Eigenes RemindingListItem Objekt erstellen
-    RemindingListItem newRemLiItem = RemindingListItem(s);
-    newRemLiItem.isChecked = b;
-    int myId = id;
-    id++;
-    //Bool Liste hinzufügen
-    helpSet.add(newRemLiItem.isChecked);
-    remindingItems.add(
-        Row(
-          key: UniqueKey(),
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-              Checkbox(
-              value: newRemLiItem.isChecked,
-                onChanged: (value) {
-                  setState(() {
-
-                    print(newRemLiItem.isChecked);
-                  });
-                },
-              ),
-            GestureDetector(
-                child: Container(
-                  color: _iconButtonPressed ? Colors.green: Colors.red,
-                    margin: EdgeInsets.fromLTRB(15, 10, 15, 0),
-                    height:75.0,
-                    width: 250,
-                    child: Center(
-                        child: Text(newRemLiItem.itemName)
-                    ),
-                ),
-                onTap: (){
-                    if(remove==false) {
-                      setState(() {
-                        newRemLiItem.updateItem();
-                        print(newRemLiItem.isChecked);
-                        removeItem(id);
-                        addingItem(newRemLiItem.itemName, newRemLiItem.isChecked);
-                      });
-                    } else {
-                      setState(() {
-                        removeItem(myId);
-                      });
-                    }
-                  }
-              )
-            ],
-          ),
-        );
-      }
-
-  void removeItem(int id) {
-    remindingItems.removeAt(id);
-  }
-
+    bool isChecked = false;
+    int? selectedId;
+    String helpstring = "";
 
 
   @override
@@ -103,6 +49,7 @@ class _RemindingListPageState extends State<RemindingListPage> {
           },
         ),
           actions: <Widget>[
+            //TODO DONE/Uncheck BUTTON IN DER DATABASE ALLE isCHECKED VALUES GETTEN, mit ternary operator
             IconButton(
               icon: const Icon(Icons.create_outlined),
               tooltip: 'Show Snackbar',
@@ -112,47 +59,95 @@ class _RemindingListPageState extends State<RemindingListPage> {
                 _iconButtonPressed = !_iconButtonPressed;
                 setState(() {
 
-                  print(remove);
                 });
               },
             ),
           ]
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Column(
-            children: remindingItems,
-          )
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.blueGrey[800],
-          child: const Icon(Icons.add),
-          onPressed: () {
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Namen eingeben'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          TextField(
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (value) {
-                              addingItem(value, false);
-                              Navigator.of(context).pop();
-                              setState(() => {});
-                            },
-                          )
-                        ],
+      body: Center(
+        //TODO Checkboxes
+        child: FutureBuilder<List<Item>>(
+            future: DatabaseHelper.instance.getItems(title),
+            builder: (BuildContext context,
+                AsyncSnapshot<List<Item>> snapshot) {
+              if (!snapshot.hasData) {
+                return Center(child: Text('Loading...'));
+              }
+              return snapshot.data!.isEmpty
+                  ? Center(child: Text('No Items in List.'))
+                  : ListView(
+                children: snapshot.data!.map((item) {
+                  return Center(
+                    child: Card(
+                      child: ListTile(
+                        title: Text(item.itemName),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) {
+                                  return RemindingListPage();
+                                }
+                            ),
+                          );
+                        },
+                        onLongPress: () {
+                          setState(() {
+                            DatabaseHelper.instance.removeItem(item.idItem!);
+                          });
+                        },
                       ),
-                    );
-                  });
-            }
-        ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
+      ),
+      //TODO Uncheck Button
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blueGrey[800],
+        onPressed: () async {
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Namen eingeben'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TextField(
+                        textInputAction: TextInputAction.none,
+                        onSubmitted: (value) {
+                          helpstring = value;
+                          print(helpstring);
+                        },
+                      ),
+                      TextButton(
+                        style: ButtonStyle(
+                          foregroundColor:
+                          MaterialStateProperty.all<Color>(Colors.blue),
+                        ),
+                        onPressed: () async {
+                          await DatabaseHelper.instance.addItem(
+                            Item(itemName: helpstring,parent: title,isChecked: 0),
+
+                          );
+                          helpstring ="";
+                          setState(() {
+
+                          });
+                        },
+                        child: Text('Add'),
+                      )
+                    ],
+                  ),
+                );
+              });
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
+
