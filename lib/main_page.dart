@@ -19,6 +19,7 @@ class _MainPageState extends State<MainPage> {
   int? selectedId;
   String helpstring = "";
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,6 +154,7 @@ class _MainPageState extends State<MainPage> {
                     children: <Widget>[
                       TextField(
                         textInputAction: TextInputAction.none,
+                        //TODO Check Name before Submission
                         onSubmitted: (value) {
                           helpstring = value;
                           print(helpstring);

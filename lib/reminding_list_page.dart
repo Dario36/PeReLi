@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pereli/item.dart';
+import 'package:sqflite/sqflite.dart';
 import 'database.dart';
 
-List<Widget> remindingItems = [];
 String title = "PeReLi";
-Set<bool> helpSet = {};
-int id=0;
-
+bool finishCheck = false;
 
 class RemindingListPage extends StatefulWidget {
   const RemindingListPage({Key? key}) : super(key: key);
@@ -15,23 +13,16 @@ class RemindingListPage extends StatefulWidget {
   _RemindingListPageState createState() => _RemindingListPageState();
 }
 
-void setRemindingItems(List<Widget> newItems) {
-  remindingItems = newItems;
-}
-
 void setTitle(String newTitle) {
   title = newTitle;
 }
 
 
 class _RemindingListPageState extends State<RemindingListPage> {
-    List<Widget> checkList = [];
-    bool remove = false;
-    bool _iconButtonPressed = false;
     bool isChecked = false;
     int? selectedId;
     String helpstring = "";
-
+    List<bool> listBool = [];
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +44,8 @@ class _RemindingListPageState extends State<RemindingListPage> {
             IconButton(
               icon: const Icon(Icons.create_outlined),
               tooltip: 'Show Snackbar',
-              color: _iconButtonPressed ? Colors.green: Colors.red,
+              color: finishCheck ? Colors.green: Colors.red,
               onPressed: () {
-                remove = !remove;
-                _iconButtonPressed = !_iconButtonPressed;
                 setState(() {
 
                 });
@@ -65,7 +54,6 @@ class _RemindingListPageState extends State<RemindingListPage> {
           ]
       ),
       body: Center(
-        //TODO Checkboxes
         child: FutureBuilder<List<Item>>(
             future: DatabaseHelper.instance.getItems(title),
             builder: (BuildContext context,
@@ -80,21 +68,36 @@ class _RemindingListPageState extends State<RemindingListPage> {
                   return Center(
                     child: Card(
                       child: ListTile(
-                        title: Text(item.itemName),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) {
-                                  return RemindingListPage();
-                                }
-                            ),
-                          );
+                        title: Text(
+                          item.itemName,
+                          style: TextStyle(
+                              color:item.isChecked==true ? Colors.grey: Colors.black,
+                              decoration: item.isChecked ?  TextDecoration.lineThrough: TextDecoration.none
+                          )
+                        ),
+                          trailing: Checkbox(
+                            onChanged: (bool? value) async {
+                              await DatabaseHelper.instance.updateItemBool(item);
+                              await DatabaseHelper.instance.checkFinished(title);
+                              setState(() {
+
+                              });
+
+                            },
+                            value: item.isChecked,
+                          ),
+                          onTap: () async {
+                            await DatabaseHelper.instance.updateItemBool(item);
+                            await DatabaseHelper.instance.checkFinished(title);
+                          setState(() {
+                          });
                         },
-                        onLongPress: () {
+                        //TODO Button oben rechts zurücksetzen
+                        onLongPress: () async {
                           setState(() {
                             DatabaseHelper.instance.removeItem(item.idItem!);
                           });
+
                         },
                       ),
                     ),
@@ -103,7 +106,6 @@ class _RemindingListPageState extends State<RemindingListPage> {
               );
             }),
       ),
-      //TODO Uncheck Button
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blueGrey[800],
         onPressed: () async {
@@ -116,6 +118,7 @@ class _RemindingListPageState extends State<RemindingListPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
+                      //TODO Check Name before Submission
                       TextField(
                         textInputAction: TextInputAction.none,
                         onSubmitted: (value) {
@@ -129,10 +132,8 @@ class _RemindingListPageState extends State<RemindingListPage> {
                           MaterialStateProperty.all<Color>(Colors.blue),
                         ),
                         onPressed: () async {
-                          await DatabaseHelper.instance.addItem(
-                            Item(itemName: helpstring,parent: title,isChecked: 0),
-
-                          );
+                          //TODO Button obenrechts anpassen
+                          await DatabaseHelper.instance.addItem(Item(itemName: helpstring,parent: title,isChecked: false));
                           helpstring ="";
                           setState(() {
 
