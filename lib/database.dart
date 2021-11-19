@@ -29,26 +29,28 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE remindinglists(
           id INTEGER PRIMARY KEY,
-          name TEXT
+          name TEXT UNIQUE
       )
       ''');
     await db.execute('''
       CREATE TABLE itemTable(
         idItem INTEGER PRIMARY KEY,
-        itemName TEXT,
+        itemName TEXT UNIQUE,
         parent TEXT,
         isChecked BIT
       )
       ''');
+    await db.rawInsert('INSERT INTO remindinglists (id, name) VALUES(0, "Test Liste")');
+    await db.rawInsert('INSERT INTO itemTable (idItem, itemName, parent, isChecked) VALUES(0, "Test Item", "Test Liste", 0)');
   }
 
   Future<List<RemindingList>> getRemindinglists() async {
     Database db = await instance.database;
-    var groceries = await db.query('remindinglists', orderBy: 'name');
-    List<RemindingList> groceryList = groceries.isNotEmpty
-        ? groceries.map((c) => RemindingList.fromMap(c)).toList()
+    var remindingLists = await db.query('remindinglists', orderBy: 'name');
+    List<RemindingList> listofremindinglists = remindingLists.isNotEmpty
+        ? remindingLists.map((c) => RemindingList.fromMap(c)).toList()
         : [];
-    return groceryList;
+    return listofremindinglists;
   }
 
   Future<List<Item>> getItems(String title) async {
@@ -62,14 +64,24 @@ class DatabaseHelper {
 
   Future<int> add(RemindingList rL) async {
     Database db = await instance.database;
-    return await db.insert('remindinglists', rL.toMap());
+    var alreadyExisting = await db.query('remindinglists', where: 'name = ?', whereArgs: [rL.name]);
+    if(alreadyExisting.length==1) {
+      return 0;
+    } else return await db.insert('remindinglists', rL.toMap());
   }
 
 
   Future<int> addItem(Item item) async {
     Database db = await instance.database;
-    return await db.insert('itemTable', item.toMap());
+    var alreadyExisting = await db.query('itemTable', where: 'itemName = ?', whereArgs: [item.itemName]);
+    if(alreadyExisting.length==1) {
+      return 0;
+    } else {
+      finishCheck = false;
+      return await db.insert('itemTable', item.toMap());
+    }
   }
+
 
   Future<int> remove(int id, String title) async {
     Database db = await instance.database;
@@ -77,13 +89,11 @@ class DatabaseHelper {
     return await db.delete('remindinglists', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<int> removeItem(int id) async {
+  Future<void> removeItem(int id) async {
     Database db = await instance.database;
-    return await db.delete('itemTable', where: 'idItem = ?', whereArgs: [id]);
-
+    await db.delete('itemTable', where: 'idItem = ?', whereArgs: [id]);
+    await DatabaseHelper.instance.checkFinished(title);
   }
-
-
 
   Future<int> update(RemindingList rL) async {
     Database db = await instance.database;
@@ -98,17 +108,12 @@ class DatabaseHelper {
   }
 
   Future<int> updateItemBool(Item item) async {
-    // int updateValue = 0;
-    // if(item.isChecked==0) {
-    //   updateValue=1;
-    // }
     Item boolCheck = Item(
       idItem: item.idItem,
       itemName: item.itemName,
       parent: item.parent,
       isChecked: !item.isChecked,
     );
-
     Database db = await instance.database;
     return await db.update('itemTable', boolCheck.toMap(),
         where: "idItem = ?", whereArgs: [item.idItem]);
@@ -118,13 +123,18 @@ class DatabaseHelper {
     Database db = await instance.database;
     var checkedItems = await db.query('itemTable',where: 'parent = ? and isChecked = ?', whereArgs: [title, 1]);
     var itemList = await db.query('itemTable', where: 'parent = ?', whereArgs: [title]);
-    print(itemList.length);
-    print(checkedItems.length);
     if (itemList.length==checkedItems.length) {
       finishCheck = true;
     } else {
-
       finishCheck = false;
     }
   }
+
+
+  Future<int> uncheckAll(String title) async {
+    Database db = await instance.database;
+    finishCheck = false;
+    return await db.rawUpdate('UPDATE itemTable SET isChecked = 0 WHERE parent = ?', [title]);
+  }
+
 }

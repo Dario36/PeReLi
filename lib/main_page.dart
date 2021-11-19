@@ -17,7 +17,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   bool isChecked = false;
   int? selectedId;
-  String helpstring = "";
 
 
   @override
@@ -25,7 +24,7 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       appBar: AppBar(
           title: const Text("PeReLi"),
-          backgroundColor: Colors.blueGrey[800],
+          backgroundColor: Colors.blueGrey,
           leading: Builder(
             builder: (BuildContext context) {
               return IconButton(
@@ -37,17 +36,7 @@ class _MainPageState extends State<MainPage> {
               );
             },
           ),
-          actions: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.create_outlined),
-              tooltip: 'Show Snackbar',
-              onPressed: () {
-                setState(() {
-
-                });
-              },
-            ),
-          ]),
+      ),
       drawer: Drawer(
         // Add a ListView to the drawer. This ensures the user can scroll
         // through the options in the drawer if there isn't enough vertical
@@ -60,24 +49,18 @@ class _MainPageState extends State<MainPage> {
               decoration: BoxDecoration(
                 color: Colors.blueGrey,
               ),
-              child: Icon(Icons.assessment),
+              child: SizedBox(),
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
               onTap: () {
-                // Update the state of the app
-                // ...
-                // Then close the drawer
               },
             ),
             ListTile(
                 leading: const Icon(Icons.alternate_email),
                 title: const Text('Credit and Version'),
                 onTap: () {
-                  // Update the state of the app
-                  // ...
-                  // Then close the drawer
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) {
@@ -85,17 +68,6 @@ class _MainPageState extends State<MainPage> {
                     }),
                   );
                 }),
-            ListTile(
-              leading: Checkbox(
-                value: isChecked,
-                onChanged: (value) {
-                  setState(() {
-                    isChecked = !isChecked;
-                    print(isChecked);
-                  });
-                },
-              ),
-            )
           ],
         ),
       ),
@@ -153,30 +125,18 @@ class _MainPageState extends State<MainPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       TextField(
-                        textInputAction: TextInputAction.none,
-                        //TODO Check Name before Submission
-                        onSubmitted: (value) {
-                          helpstring = value;
-                          print(helpstring);
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (value) async {
+                          if (value=="") {
+                          } else {
+                            await DatabaseHelper.instance.add(
+                              RemindingList(name: value),
+                            );
+                            Navigator.pop(context);
+                          }
+                          setState(() {});
                         },
                       ),
-                      TextButton(
-                        style: ButtonStyle(
-                          foregroundColor:
-                          MaterialStateProperty.all<Color>(Colors.blue),
-                        ),
-                        onPressed: () async {
-                          await DatabaseHelper.instance.add(
-                            RemindingList(name: helpstring),
-
-                          );
-                          helpstring ="";
-                          setState(() {
-
-                          });
-                        },
-                        child: Text('Add'),
-                      )
                     ],
                   ),
                 );
@@ -187,41 +147,3 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
-
-//----------------------------------------------------------------------------
-//   showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: const Text('Namen eingeben'),
-//           content: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: <Widget>[
-//               TextField(
-//                 textInputAction: TextInputAction.done,
-//                 onSubmitted: (value) {
-//                   helpstring = value;
-//                   print(helpstring);
-//                 },
-//               ),
-//               TextButton(
-//                 style: ButtonStyle(
-//                   foregroundColor:
-//                       MaterialStateProperty.all<Color>(Colors.blue),
-//                 ),
-//                 onPressed: () async {
-//                   await DatabaseHelper.instance.add(
-//                     RemindingList(listName: helpstring),
-//                   );
-//                   setState(() {
-//                     helpstring = "";
-//                   });
-//                 },
-//                 child: Text('Add'),
-//               )
-//             ],
-//           ),
-//         );
-//       });
-// },
