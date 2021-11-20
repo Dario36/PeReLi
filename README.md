@@ -7,5 +7,5 @@ MainPage and unchecks all items.
 This App has been developed as part of the "Hauptseminar Wintersemester 21/22" at the TH Mittelhessen by Dario Pläschke.
 
 ## How to install
-This app has been currently only released on Android.
+This app is currently only released on Android.
 You can find the latest build of this app under the name "PeReLi.apk"
