@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'reminding_list_item.dart';
+import 'package:pereli/item.dart';
+import 'database.dart';
 
-
-List<Widget> remindingItems = [];
 String title = "PeReLi";
-Set<bool> helpSet = {};
-
+bool finishCheck = false;
 
 class RemindingListPage extends StatefulWidget {
   const RemindingListPage({Key? key}) : super(key: key);
@@ -14,169 +12,174 @@ class RemindingListPage extends StatefulWidget {
   _RemindingListPageState createState() => _RemindingListPageState();
 }
 
-void setRemindingItems(List<Widget> newItems) {
-  remindingItems = newItems;
-}
-
 void setTitle(String newTitle) {
   title = newTitle;
 }
 
-
 class _RemindingListPageState extends State<RemindingListPage> {
-    List<Widget> checkList = [];
-    bool remove = false;
-    bool _iconButtonPressed = false;
-    int id=0;
-  //Method Called to add an Item to the List
-  void addingItem(String s, bool b) {
-    //Eigenes RemindingListItem Objekt erstellen
-    RemindingListItem newRemLiItem = RemindingListItem(s);
-    newRemLiItem.isChecked = b;
-    int myId = id;
-    id++;
-    //Bool Liste hinzufügen
-    helpSet.add(newRemLiItem.isChecked);
-    remindingItems.add(
-        Row(
-          key: UniqueKey(),
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            GestureDetector(
-                child: Container(
-                    margin: EdgeInsets.fromLTRB(15, 10, 15, 0),
-                    height:75.0,
-                    width: 250,
-                    child: Card(
-                        shape: RoundedRectangleBorder(
-
-                          borderRadius: BorderRadius.circular(15.0),
-
-                        ),
-
-                        color: _iconButtonPressed ? Colors.green: Colors.red,
-                        elevation: 10,
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: newRemLiItem.isChecked,
-                              onChanged: (value) {
-                                setState(() {
-
-                                  print(newRemLiItem.isChecked);
-                                });
-                              },
-                            ),
-                            const SizedBox(
-                              width:40
-                            ),
-                            Container(
-                                child: Center(
-                                    child:Text(
-                                        newRemLiItem.itemName,
-                                        style: const TextStyle(
-                                            fontSize: 35.0,
-                                            color: Colors.white
-                                        )
-                                    )
-                                )
-                              )
-                            ],
-                          )
-                    ),
-                ),
-                onTap: (){
-                    if(remove==false) {
-                      setState(() {
-                        newRemLiItem.updateItem();
-                        print(newRemLiItem.isChecked);
-                        removeItem(id);
-                        addingItem(newRemLiItem.itemName, newRemLiItem.isChecked);
-                      });
-                    } else {
-                      setState(() {
-                        removeItem(myId);
-                      });
-                    }
-                  }
-              )
-            ],
-          ),
-        );
-      }
-
-  void removeItem(int id) {
-    remindingItems.clear();
-  }
-
-
-
+  bool isChecked = false;
+  int? selectedId;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.blueGrey[800],
-        //Building an Back Arrow Button
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },);
-          },
-        ),
+          title: Text(title),
+          backgroundColor: Colors.blueGrey[800],
+          //Building an Back Arrow Button
+          leading: Builder(
+            builder: (BuildContext context) {
+              return IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              );
+            },
+          ),
           actions: <Widget>[
             IconButton(
-              icon: const Icon(Icons.create_outlined),
-              tooltip: 'Show Snackbar',
-              color: _iconButtonPressed ? Colors.green: Colors.red,
-              onPressed: () {
-                remove = !remove;
-                _iconButtonPressed = !_iconButtonPressed;
-                setState(() {
-
-                  print(remove);
-                });
-              },
-            ),
-          ]
-      ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Column(
-            children: remindingItems,
-          )
-        ],
+                icon: finishCheck
+                    ? const Icon(Icons.done)
+                    : const Icon(Icons.clear),
+                color: finishCheck ? Colors.green : Colors.grey,
+                onPressed: finishCheck
+                    ? () {
+                        DatabaseHelper.instance.uncheckAll(title);
+                        setState(() {
+                          Navigator.pop(context);
+                        });
+                      }
+                    : () {
+                        null;
+                      }),
+          ]),
+      body: Center(
+        child: FutureBuilder<List<Item>>(
+            future: DatabaseHelper.instance.getItems(title),
+            builder:
+                (BuildContext context, AsyncSnapshot<List<Item>> snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: Text('Loading...'));
+              }
+              return snapshot.data!.isEmpty
+                  ? const Center(child: Text('No Items in List.'))
+                  : ListView(
+                      children: snapshot.data!.map((item) {
+                        return Center(
+                          child: Card(
+                            child: ListTile(
+                              title: Text(item.itemName,
+                                  style: TextStyle(
+                                      color: item.isChecked == true
+                                          ? Colors.grey
+                                          : Colors.black,
+                                      decoration: item.isChecked
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none)),
+                              trailing: Checkbox(
+                                onChanged: (bool? value) async {
+                                  await DatabaseHelper.instance
+                                      .updateItemBool(item);
+                                  await DatabaseHelper.instance
+                                      .checkFinished(title);
+                                  setState(() {});
+                                },
+                                value: item.isChecked,
+                              ),
+                              onTap: () async {
+                                await DatabaseHelper.instance
+                                    .updateItemBool(item);
+                                await DatabaseHelper.instance
+                                    .checkFinished(title);
+                                setState(() {});
+                              },
+                              onLongPress: () async {
+                                await DatabaseHelper.instance
+                                    .removeItem(item.idItem!);
+                                setState(() {
+                                  DatabaseHelper.instance.checkFinished(title);
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+            }),
       ),
       floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.blueGrey[800],
-          child: const Icon(Icons.add),
-          onPressed: () {
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Namen eingeben'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          TextField(
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (value) {
-                              addingItem(value, false);
-                              Navigator.of(context).pop();
-                              setState(() => {});
-                            },
-                          )
-                        ],
+        backgroundColor: Colors.blueGrey[800],
+        onPressed: () async {
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Insert name'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TextField(
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (value) async {
+                          if (value == "") {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: const <Widget>[
+                                          SizedBox(height: 30),
+                                          Text('Please insert a name!',
+                                              style: TextStyle(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 23)),
+                                          SizedBox(height: 30),
+                                        ]),
+                                  );
+                                });
+                          } else {
+                            if (await DatabaseHelper.instance.addItem(Item(
+                                    itemName: value,
+                                    parent: title,
+                                    isChecked: false)) ==
+                                1) {
+                              await showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: const <Widget>[
+                                            SizedBox(height: 30),
+                                            Text('Name already exists!',
+                                                style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 23)),
+                                            SizedBox(height: 30),
+                                          ]),
+                                    );
+                                  });
+                            }
+                            Navigator.pop(context);
+                          }
+                          setState(() {});
+                        },
                       ),
-                    );
-                  });
-            }
-        ),
+                    ],
+                  ),
+                );
+              });
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
