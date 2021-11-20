@@ -1,16 +1,10 @@
-# pereli
+# PeReLi
 
-A new Flutter project.
+PeReLi is a Flutter App, which allows you to save multiple checklists. 
+When you have checked all items of the checklist, the Button in top right corner, returns to the 
+MainPage and unchecks all items. 
+This App has been developed as part of the Hauptseminar in Wintersemester 2021/22 at the THM Mittelhessen.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## How to install
+This app has been currently only released on Android.
+You can find the latest build of this app under the name "PeReLi.apk"
