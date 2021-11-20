@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pereli/item.dart';
-import 'package:sqflite/sqflite.dart';
 import 'database.dart';
 
 String title = "PeReLi";
@@ -38,18 +37,21 @@ class _RemindingListPageState extends State<RemindingListPage> {
             },
           ),
           actions: <Widget>[
-            //TODO DONE/Uncheck BUTTON IN DER DATABASE ALLE isCHECKED VALUES GETTEN, mit ternary operator
             IconButton(
-              icon: const Icon(Icons.create_outlined),
-              tooltip: 'Show Snackbar',
-              color: finishCheck ? Colors.green : Colors.red,
-              onPressed: () {
-                DatabaseHelper.instance.uncheckAll(title);
-                setState(() {
-                  Navigator.pop(context);
-                });
-              },
-            ),
+                icon: finishCheck
+                    ? const Icon(Icons.done)
+                    : const Icon(Icons.clear),
+                color: finishCheck ? Colors.green : Colors.grey,
+                onPressed: finishCheck
+                    ? () {
+                        DatabaseHelper.instance.uncheckAll(title);
+                        setState(() {
+                          Navigator.pop(context);
+                        });
+                      }
+                    : () {
+                        null;
+                      }),
           ]),
       body: Center(
         child: FutureBuilder<List<Item>>(
@@ -57,10 +59,10 @@ class _RemindingListPageState extends State<RemindingListPage> {
             builder:
                 (BuildContext context, AsyncSnapshot<List<Item>> snapshot) {
               if (!snapshot.hasData) {
-                return Center(child: Text('Loading...'));
+                return const Center(child: Text('Loading...'));
               }
               return snapshot.data!.isEmpty
-                  ? Center(child: Text('No Items in List.'))
+                  ? const Center(child: Text('No Items in List.'))
                   : ListView(
                       children: snapshot.data!.map((item) {
                         return Center(
@@ -112,7 +114,7 @@ class _RemindingListPageState extends State<RemindingListPage> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: const Text('Namen eingeben'),
+                  title: const Text('Insert name'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,21 +122,57 @@ class _RemindingListPageState extends State<RemindingListPage> {
                       TextField(
                         textInputAction: TextInputAction.done,
                         onSubmitted: (value) async {
-                          if(value=="") {
-
+                          if (value == "") {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: const <Widget>[
+                                          SizedBox(height: 30),
+                                          Text('Please insert a name!',
+                                              style: TextStyle(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 23)),
+                                          SizedBox(height: 30),
+                                        ]),
+                                  );
+                                });
                           } else {
-                            await DatabaseHelper.instance.addItem(Item(
-                                itemName: value,
-                                parent: title,
-                                isChecked: false));
+                            if (await DatabaseHelper.instance.addItem(Item(
+                                    itemName: value,
+                                    parent: title,
+                                    isChecked: false)) ==
+                                1) {
+                              await showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: const <Widget>[
+                                            SizedBox(height: 30),
+                                            Text('Name already exists!',
+                                                style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 23)),
+                                            SizedBox(height: 30),
+                                          ]),
+                                    );
+                                  });
+                            }
                             Navigator.pop(context);
                           }
-                          setState(() {
-
-                          });
+                          setState(() {});
                         },
                       ),
-
                     ],
                   ),
                 );

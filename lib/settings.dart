@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-
+/* Settings page
+* Will enable customizations of the app in the future
+ */
 class Settings extends StatelessWidget {
   const Settings({Key? key}) : super(key: key);
 
@@ -8,24 +10,20 @@ class Settings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title:const Text('Version and Credits'),
-          backgroundColor: Colors.blueGrey,
+          title: const Text('Settings'),
+          backgroundColor: Colors.grey,
           //Building an Back Arrow Button
           leading: Builder(
             builder: (BuildContext context) {
-              return IconButton(icon: const Icon(Icons.arrow_back),
+              return IconButton(
+                icon: const Icon(Icons.arrow_back),
                 onPressed: () {
                   Navigator.of(context).pop();
-                },);
+                },
+              );
             },
           ),
         ),
-        body: Container (
-            child: Center(
-                child: Text("JUHU DAS IST VERSION 0.1 VON DRIZZLE")
-            )
-        )
-    );
+        body: const Center(child: Text("No Settings available yet")));
   }
 }
-

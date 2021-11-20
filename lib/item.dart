@@ -1,3 +1,7 @@
+/* Class for the checkable items on the RemindingListPage
+* including methods to map the values, to interact with the database
+ */
+
 class Item {
   final int? idItem;
   final String itemName;
@@ -5,24 +9,18 @@ class Item {
   final bool isChecked;
   bool? itemBool = false;
 
-  Item({this.idItem, required this.itemName, required this.parent, required this.isChecked});
-
-  bool updateBool() {
-    if(this.isChecked==0) {
-      this.itemBool = false;
-      return false;
-    } else {
-      this.itemBool=true;
-      return true;
-    }
-  }
+  Item(
+      {this.idItem,
+      required this.itemName,
+      required this.parent,
+      required this.isChecked});
 
   factory Item.fromMap(Map<String, dynamic> json) => Item(
-    idItem: json['idItem'],
-    itemName: json['itemName'],
-    parent: json['parent'],
-    isChecked: json['isChecked']==1,
-  );
+        idItem: json['idItem'],
+        itemName: json['itemName'],
+        parent: json['parent'],
+        isChecked: json['isChecked'] == 1,
+      );
 
   Map<String, dynamic> toMap() {
     return {
